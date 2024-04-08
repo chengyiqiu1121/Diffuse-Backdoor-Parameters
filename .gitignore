@@ -1,1 +1,6 @@
-/data
+data/
+checkpoint/
+checkpoints/
+.idea
+parameters/
+datasets/
