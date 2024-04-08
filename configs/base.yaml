@@ -1,0 +1,26 @@
+defaults:
+  - task: cifar100
+  - system: autoencoder
+  - _self_
+
+device:
+  cuda_visible_devices:  "0,1"
+  id: 1
+  cuda: cuda:${device.id}
+
+load_system_checkpoint:
+mode: train
+#mode: test
+
+seed: 42
+process_title: p-diff
+
+output_dir: outputs/cifar10
+
+hydra:
+  output_subdir: config
+  run:
+    dir: ${output_dir}
+  sweep:
+    dir: ${output_dir}
+    subdir: ${hydra.job.override_dirname}

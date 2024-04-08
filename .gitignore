@@ -4,3 +4,6 @@ checkpoints/
 .idea
 parameters/
 datasets/
+.vscode
+__pycache__/
+
