@@ -7,8 +7,32 @@ from torch import nn
 from tqdm import tqdm
 
 
+def fix_partial_model(train_list, net):
+    print(train_list)
+    for name, weights in net.named_parameters():
+        if name not in train_list:
+            weights.requires_grad = False
+
+
+def state_part(train_list, net):
+    part_param = {}
+    for name, weights in net.named_parameters():
+        if name in train_list:
+            part_param[name] = weights.detach().cpu()
+    return part_param
+
+
+def pdata_dic2tensor(pdata):
+    res = []
+    for i in pdata:
+        w = i['linear.weight'].reshape(-1)
+        b = i['linear.bias']
+        wb = torch.cat([w, b], dim=0)
+        res.append(wb)
+    return torch.stack(res)
+
+
 def train_one_epoch(net, criterion, optimizer, trainloader, current_epoch, device):
-    print('\nEpoch: %d' % current_epoch)
     net.train()
     train_loss = 0
     correct = 0
@@ -37,8 +61,7 @@ def test(net, criterion, testloader, device):
     correct = 0
     total = 0
     with torch.no_grad():
-        print('\nstart testing')
-        for batch_idx, (inputs, targets) in enumerate(tqdm(testloader)):
+        for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
@@ -53,13 +76,32 @@ def test(net, criterion, testloader, device):
         return 100. * correct / total
 
 
-def train(net, criterion, optimizer, trainloader, testloader, epoch, device):
-    best_scc = 0
-    for i in tqdm(range(epoch)):
-        train_one_epoch(net, criterion, optimizer, trainloader, i, device)
-        current_acc = test(net, criterion, testloader, device)
-        best_scc = max(current_acc, best_scc)
-    return best_scc
+def train(net, criterion, optimizer, trainloader, testloader, epoch, device, train_layer=['all']):
+    best_acc = 0
+    parameter_data = []
+    acc_list = []
+    if train_layer == ['all']:
+        for i in tqdm(range(epoch), desc=f'training: {train_layer}'):
+            train_one_epoch(net, criterion, optimizer, trainloader, i, device)
+            current_acc = test(net, criterion, testloader, device)
+            acc_list.append(current_acc)
+            best_acc = max(current_acc, best_acc)
+        torch.save(net.state_dict(), '../tmp/whole_model.pth')
+    else:
+        fix_partial_model(train_layer, net)
+        for i in tqdm(range(epoch)):
+            train_one_epoch(net, criterion, optimizer, trainloader, i, device)
+            current_acc = test(net, criterion, testloader, device)
+            acc_list.append(current_acc)
+            best_acc = max(current_acc, best_acc)
+            parameter_data.append(state_part(train_layer, net))
+        res_dict = {
+            'best_acc': best_acc,
+            'acc_list': acc_list,
+            'pdata': pdata_dic2tensor(parameter_data),
+        }
+        torch.save(res_dict, '../tmp/pdata.pth')
+    return best_acc
 
 
 if __name__ == '__main__':
@@ -83,7 +125,8 @@ if __name__ == '__main__':
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=1e-3)
     net = net.to(device)
+    train_layer = ['linear.weight', 'linear.bias']
     train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=10, trainloader=train_loader, device=device,
           testloader=test_loader)
-    acc = test(net=net, criterion=loss_fn, testloader=test_loader, device=device)
-    print(acc)
+    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=10, trainloader=train_loader, device=device,
+          testloader=test_loader, train_layer=train_layer)

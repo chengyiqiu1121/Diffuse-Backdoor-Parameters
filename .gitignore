@@ -6,7 +6,7 @@ parameters/
 datasets/
 .vscode
 __pycache__/
-
+#tmp/
 
 
 
