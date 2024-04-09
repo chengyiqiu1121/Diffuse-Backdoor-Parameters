@@ -11,7 +11,7 @@ from utils.base import BaseSystem
 from core.utils.ddpm import *
 from core.utils.utils import *
 from core.module.prelayer.latent_transformer import Param2Latent
-from .ddpm import DDPM
+from utils.ddpm import DDPM
 
 
 class AE_DDPM(DDPM):
@@ -26,6 +26,7 @@ class AE_DDPM(DDPM):
         self.split_epoch = self.train_cfg.split_epoch
         self.loss_func = nn.MSELoss()
         self.ae_model = ae_model
+        self.model = self.model.model.to(config.device.cuda)
         self.train_layer = config.task.train_layer
 
 
@@ -106,11 +107,11 @@ class AE_DDPM(DDPM):
             checkpoint = {
                 'ae_model': self.ae_model.state_dict(),
                 'ae_class': self.ae_model.__class__.__name__,
-                'model': self.model.model.state_dict(),
-                'model_class': self.model.model.__class__.__name__,
+                'model': self.model.state_dict(),
+                'model_class': self.model.__class__.__name__,
             }
             torch.save(checkpoint,
-                       f'/home/chengyiqiu/code/diffusion/Neural-Network-Diffusion/outputs/ae_ddpm_cifar10/ae_ddpm{self.current_epoch}.pth')
+                       f'/home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm{self.current_epoch}.pth')
         else:
             dict = super(AE_DDPM, self).validation_step(batch, batch_idx, **kwargs)
             self.log('ae_acc', 94.3)

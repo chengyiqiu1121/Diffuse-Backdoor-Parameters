@@ -27,7 +27,7 @@ class PData(DataBase):
             self.fix_model.to('cpu')
             self.fix_model.requires_grad_(False)
 
-            self.pdata = state['pdata']
+            self.pdata = state['pdata'].to('cpu')
             self.accuracy = state['performance']
             self.train_layer = state['train_layer']
 

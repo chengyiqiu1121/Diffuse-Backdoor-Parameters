@@ -11,6 +11,8 @@ from utils.base import BaseSystem
 from core.utils.ddpm import *
 from core.utils.utils import *
 from core.module.prelayer.latent_transformer import Param2Latent
+
+
 # from .encoder import EncoderSystem
 
 
@@ -64,7 +66,7 @@ class DDPM(BaseSystem):
         sample = self.progressive_samples_fn_simple(
             model,
             shape,
-            device='cuda',
+            device=batch.device,
             # cond = cond_input_val,
             include_x0_pred_freq=50,
             history=history,
@@ -73,7 +75,6 @@ class DDPM(BaseSystem):
         if history:
             return sample['samples'], sample['history']
         return sample['samples']
-
 
     def progressive_samples_fn_simple(self, model, shape, device, include_x0_pred_freq=50, history=False):
         samples, history = self.p_sample_loop_progressive_simple(
@@ -151,7 +152,8 @@ class DDPM(BaseSystem):
         # todo: loss using criterion, so we can change it
         if self.loss_type == 'kl':
             # the variational bound
-            losses = self._vb_terms_bpd(model=model, x_0=batch, x_t=x_t, t=time, clip_denoised=False, return_pred_x0=False)
+            losses = self._vb_terms_bpd(model=model, x_0=batch, x_t=x_t, t=time, clip_denoised=False,
+                                        return_pred_x0=False)
 
         elif self.loss_type == 'mse':
             # unweighted MSE
@@ -164,7 +166,7 @@ class DDPM(BaseSystem):
 
             model_output = model(x_t, time, cond=lab)
             print(f'x_t shape: {x_t.shape}')
-            losses       = torch.mean((target - model_output).view(batch.shape[0], -1)**2, dim=1)
+            losses = torch.mean((target - model_output).view(batch.shape[0], -1) ** 2, dim=1)
 
         else:
             raise NotImplementedError(self.loss_type)
@@ -179,21 +181,20 @@ class DDPM(BaseSystem):
         self.log('train_loss', loss)
         return loss
 
-
     def register(self, name, tensor):
         self.register_buffer(name, tensor.type(torch.float32))
 
     def _prior_bpd(self, x_0):
 
-        B, T                        = x_0.shape[0], self.num_timesteps
+        B, T = x_0.shape[0], self.num_timesteps
         qt_mean, _, qt_log_variance = self.q_mean_variance(x_0,
                                                            t=torch.full((B,), T - 1, dtype=torch.int64))
-        kl_prior                    = normal_kl(mean1=qt_mean,
-                                                logvar1=qt_log_variance,
-                                                mean2=torch.zeros_like(qt_mean),
-                                                logvar2=torch.zeros_like(qt_log_variance))
+        kl_prior = normal_kl(mean1=qt_mean,
+                             logvar1=qt_log_variance,
+                             mean2=torch.zeros_like(qt_mean),
+                             logvar2=torch.zeros_like(qt_log_variance))
 
-        return torch.mean(kl_prior.view(B, -1), dim=1)/np.log(2.)
+        return torch.mean(kl_prior.view(B, -1), dim=1) / np.log(2.)
 
     @torch.no_grad()
     def calc_bpd_loop(self, model, x_0, clip_denoised):
@@ -201,11 +202,10 @@ class DDPM(BaseSystem):
         (B, C, H, W), T = x_0.shape, self.num_timesteps
 
         new_vals_bt = torch.zeros((B, T))
-        new_mse_bt  = torch.zeros((B, T))
+        new_mse_bt = torch.zeros((B, T))
 
         for t in reversed(range(self.num_timesteps)):
-
-            t_b = torch.full((B, ), t, dtype=torch.int64)
+            t_b = torch.full((B,), t, dtype=torch.int64)
 
             # Calculate VLB term at the current timestep
             new_vals_b, pred_x0 = self._vb_terms_bpd(model=model,
@@ -216,13 +216,13 @@ class DDPM(BaseSystem):
                                                      return_pred_x0=True)
 
             # MSE for progressive prediction loss
-            new_mse_b = torch.mean((pred_x0-x_0).view(B, -1)**2, dim=1)
+            new_mse_b = torch.mean((pred_x0 - x_0).view(B, -1) ** 2, dim=1)
 
             # Insert the calculated term into the tensor of all terms
             mask_bt = (t_b[:, None] == torch.arange(T)[None, :]).to(torch.float32)
 
             new_vals_bt = new_vals_bt * (1. - mask_bt) + new_vals_b[:, None] * mask_bt
-            new_mse_bt  = new_mse_bt  * (1. - mask_bt) + new_mse_b[:, None] * mask_bt
+            new_mse_bt = new_mse_bt * (1. - mask_bt) + new_mse_b[:, None] * mask_bt
 
         prior_bpd_b = self._prior_bpd(x_0)
         total_bpd_b = torch.sum(new_vals_bt, dim=1) + prior_bpd_b
@@ -242,11 +242,10 @@ class DDPM(BaseSystem):
         return (extract(self.sqrt_alphas_cumprod, t, x_0.shape) * x_0
                 + extract(self.sqrt_one_minus_alphas_cumprod, t, x_0.shape) * noise)
 
-
     def q_posterior_mean_variance(self, x_0, x_t, t):
-        mean            = (extract(self.posterior_mean_coef1, t, x_t.shape) * x_0
-                           + extract(self.posterior_mean_coef2, t, x_t.shape) * x_t)
-        var             = extract(self.posterior_variance, t, x_t.shape)
+        mean = (extract(self.posterior_mean_coef1, t, x_t.shape) * x_0
+                + extract(self.posterior_mean_coef2, t, x_t.shape) * x_t)
+        var = extract(self.posterior_variance, t, x_t.shape)
         log_var_clipped = extract(self.posterior_log_variance_clipped, t, x_t.shape)
 
         return mean, var, log_var_clipped
@@ -258,11 +257,10 @@ class DDPM(BaseSystem):
         # model_output = model(x, t, cond=lab)
         model_output = model(x, t)
 
-
         # Learned or fixed variance?
         if self.model_var_type == 'learned':
             model_output, log_var = torch.split(model_output, 2, dim=-1)
-            var                   = torch.exp(log_var)
+            var = torch.exp(log_var)
 
         elif self.model_var_type in ['fixedsmall', 'fixedlarge']:
 
@@ -275,7 +273,7 @@ class DDPM(BaseSystem):
             }[self.model_var_type]
             # import pdb;pdb.set_trace()
 
-            var     = extract(var, t, x.shape) * torch.ones_like(x)
+            var = extract(var, t, x.shape) * torch.ones_like(x)
             log_var = extract(log_var, t, x.shape) * torch.ones_like(x)
         else:
             raise NotImplementedError(self.model_var_type)
@@ -286,14 +284,14 @@ class DDPM(BaseSystem):
         if self.model_mean_type == 'xprev':
             # the model predicts x_{t-1}
             pred_x_0 = _maybe_clip(self.predict_start_from_prev(x_t=x, t=t, x_prev=model_output))
-            mean     = model_output
+            mean = model_output
         elif self.model_mean_type == 'xstart':
             # the model predicts x_0
-            pred_x0    = _maybe_clip(model_output)
+            pred_x0 = _maybe_clip(model_output)
             mean, _, _ = self.q_posterior_mean_variance(x_0=pred_x0, x_t=x, t=t)
         elif self.model_mean_type == 'eps':
             # the model predicts epsilon
-            pred_x0    = _maybe_clip(self.predict_start_from_noise(x_t=x, t=t, noise=model_output))
+            pred_x0 = _maybe_clip(self.predict_start_from_noise(x_t=x, t=t, noise=model_output))
             mean, _, _ = self.q_posterior_mean_variance(x_0=pred_x0, x_t=x, t=t)
         else:
             raise NotImplementedError(self.model_mean_type)
@@ -311,7 +309,7 @@ class DDPM(BaseSystem):
 
     def predict_start_from_prev(self, x_t, t, x_prev):
 
-        return (extract(1./self.posterior_mean_coef1, t, x_t.shape) * x_prev -
+        return (extract(1. / self.posterior_mean_coef1, t, x_t.shape) * x_prev -
                 extract(self.posterior_mean_coef2 / self.posterior_mean_coef1, t, x_t.shape) * x_t)
 
     # def p_sample(self, model, x, t, noise_fn, clip_denoised=True, return_pred_x0=False, lab=None):
@@ -319,11 +317,11 @@ class DDPM(BaseSystem):
         # pdb.set_trace()
         mean, _, log_var, pred_x0 = self.p_mean_variance(model, x, t, clip_denoised, return_pred_x0=True)
 
-        noise                     = noise_fn(x.shape, dtype=x.dtype).to(x.device)
+        noise = noise_fn(x.shape, dtype=x.dtype).to(x.device)
 
-        shape        = [x.shape[0]] + [1] * (x.ndim - 1)
+        shape = [x.shape[0]] + [1] * (x.ndim - 1)
         nonzero_mask = (1 - (t == 0).type(torch.float32)).view(*shape).to(x.device)
-        sample       = mean + nonzero_mask * torch.exp(0.5 * log_var) * noise
+        sample = mean + nonzero_mask * torch.exp(0.5 * log_var) * noise
 
         sample = torch.clamp(sample, min=-1, max=1)
 
@@ -336,10 +334,9 @@ class DDPM(BaseSystem):
     # def p_sample_loop(self, model, shape, noise_fn=torch.randn, lab=None):
     def p_sample_loop(self, model, shape, noise_fn=torch.randn):
 
-
-        device = 'cuda' if next(model.parameters()).is_cuda else 'cpu'
+        device = model.device
         # shape[0] = lab.shape[0]
-        img    = noise_fn(10).to(device)
+        img = noise_fn(10).to(device)
 
         for i in reversed(range(self.num_timesteps)):
             img = self.p_sample(
@@ -358,16 +355,15 @@ class DDPM(BaseSystem):
 
         img = noise_fn(shape, dtype=torch.float32).to(device)
         num_recorded_x0_pred = self.num_timesteps // include_x0_pred_freq
-        x0_preds_            = torch.zeros((shape[0], num_recorded_x0_pred, *shape[1:]), dtype=torch.float32).to(device)
+        x0_preds_ = torch.zeros((shape[0], num_recorded_x0_pred, *shape[1:]), dtype=torch.float32).to(device)
 
         for i in reversed(range(self.num_timesteps)):
-
             img, pred_x0 = self.p_sample(model=model,
                                          x=img,
                                          t=torch.full((shape[0],), i, dtype=torch.int64).to(device),
                                          noise_fn=noise_fn,
                                          return_pred_x0=True,
-                                        #  lab=cond,
+                                         #  lab=cond,
                                          )
 
             # Keep track of prediction of x0
@@ -376,20 +372,20 @@ class DDPM(BaseSystem):
                                                                               device=device)
 
             insert_mask = insert_mask.to(torch.float32).view(1, num_recorded_x0_pred, *([1] * len(shape[1:])))
-            x0_preds_   = insert_mask * pred_x0[:, None, ...] + (1. - insert_mask) * x0_preds_
+            x0_preds_ = insert_mask * pred_x0[:, None, ...] + (1. - insert_mask) * x0_preds_
 
         return img, x0_preds_
 
     def p_sample_loop_progressive_simple(self, model, shape, device, noise_fn=torch.randn,
-                                         include_x0_pred_freq=50,input_pa=None,exp_step=None):
+                                         include_x0_pred_freq=50, input_pa=None, exp_step=None):
 
         # import pdb; pdb.set_trace()
         # sample_lab = torch.tensor([i%10 w i in range(shape[0])]).long().to(device)
         img = noise_fn(shape, dtype=torch.float32).to(device)
         if input_pa is not None:
-            img = input_pa.repeat(shape[0],shape[1],1).to(device)
+            img = input_pa.repeat(shape[0], shape[1], 1).to(device)
         num_recorded_x0_pred = self.num_timesteps // include_x0_pred_freq
-        x0_preds_            = torch.zeros((shape[0], num_recorded_x0_pred, *shape[1:]), dtype=torch.float32).to(device)
+        x0_preds_ = torch.zeros((shape[0], num_recorded_x0_pred, *shape[1:]), dtype=torch.float32).to(device)
 
         history = []
         if exp_step is not None:
@@ -406,9 +402,8 @@ class DDPM(BaseSystem):
                                          t=torch.full((shape[0],), i, dtype=torch.int64).to(device),
                                          noise_fn=noise_fn,
                                          return_pred_x0=True,
-                                        #  lab=cond,
+                                         #  lab=cond,
                                          )
-
 
             history.append(img.detach().cpu())
         return img, history
@@ -418,9 +413,9 @@ class DDPM(BaseSystem):
     def _vb_terms_bpd(self, model, x_0, x_t, t, clip_denoised, return_pred_x0, lab=None):
 
         batch_size = t.shape[0]
-        true_mean, _, true_log_variance_clipped    = self.q_posterior_mean_variance(x_0=x_0,
-                                                                                    x_t=x_t,
-                                                                                    t=t)
+        true_mean, _, true_log_variance_clipped = self.q_posterior_mean_variance(x_0=x_0,
+                                                                                 x_t=x_t,
+                                                                                 t=t)
         model_mean, _, model_log_variance, pred_x0 = self.p_mean_variance(model,
                                                                           x=x_t,
                                                                           t=t,
@@ -439,5 +434,3 @@ class DDPM(BaseSystem):
         output = torch.where(t == 0, decoder_nll, kl)
 
         return (output, pred_x0) if return_pred_x0 else output
-
-
