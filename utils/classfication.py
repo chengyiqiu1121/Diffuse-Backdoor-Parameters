@@ -6,6 +6,7 @@ from torch import nn
 from tqdm import tqdm
 from torch.optim.lr_scheduler import MultiStepLR
 
+
 def fix_partial_model(train_list, net):
     print(train_list)
     for name, weights in net.named_parameters():
@@ -31,7 +32,7 @@ def pdata_dic2tensor(pdata):
     return torch.stack(res)
 
 
-def train_one_epoch(net, criterion, optimizer, trainloader, current_epoch, device):
+def train_one_epoch(net, criterion, optimizer, trainloader, current_epoch, device, lr_schedule):
     net.train()
     train_loss = 0
     correct = 0
@@ -48,6 +49,8 @@ def train_one_epoch(net, criterion, optimizer, trainloader, current_epoch, devic
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
+    if lr_schedule is not None:
+        lr_schedule.step()
 
         # progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
         #              % (train_loss / (batch_idx + 1), 100. * correct / total, correct, total))
@@ -75,7 +78,7 @@ def test(net, criterion, testloader, device):
         return 100. * correct / total
 
 
-def train(net, criterion, optimizer, trainloader, testloader, epoch, device, train_layer=None):
+def train(net, criterion, optimizer, trainloader, testloader, epoch, device, train_layer=None, lr_schedule=None):
     if train_layer is None:
         train_layer = 'all'
     best_acc = 0
@@ -83,7 +86,7 @@ def train(net, criterion, optimizer, trainloader, testloader, epoch, device, tra
     acc_list = []
     if train_layer == 'all':
         for i in tqdm(range(epoch), desc=f'training: {train_layer}'):
-            train_one_epoch(net, criterion, optimizer, trainloader, i, device)
+            train_one_epoch(net, criterion, optimizer, trainloader, i, device, lr_schedule)
             current_acc = test(net, criterion, testloader, device)
             acc_list.append(current_acc)
             best_acc = max(current_acc, best_acc)
@@ -128,17 +131,17 @@ if __name__ == '__main__':
         download=True,
         transform=transforms.ToTensor()
     )
-    batch = 512
-    num_workers = 4
+    batch = 2048
+    num_workers = 8
     train_loader = DataLoader(train_data, batch, shuffle=True, num_workers=num_workers)
     test_loader = DataLoader(test_data, batch, shuffle=False, num_workers=num_workers)
-    device = 'cuda:1'
+    device = 'cuda:0'
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.1, weight_decay=5e-4, momentum=0.9)
-    lr_schedule = MultiStepLR(milestones=[30, 60, 90, 100], gamma=0.2, optimizer=optimizer)
     net = net.to(device)
     train_layer = ['linear.weight', 'linear.bias']
+    lr_schedule = MultiStepLR(milestones=[30, 60, 90, 100], gamma=0.2, optimizer=optimizer)
     train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
-          testloader=test_loader)
+          testloader=test_loader, lr_schedule=lr_schedule)
     train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=200, trainloader=train_loader, device=device,
-          testloader=test_loader, train_layer=train_layer)
+          testloader=test_loader, train_layer=train_layer, lr_schedule=lr_schedule)
