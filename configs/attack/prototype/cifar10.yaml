@@ -1,14 +1,14 @@
-num_workers: 4
+num_workers: 16
 pin_memory: True
 non_blocking: True
 prefetch: False
 amp: False
-device: cuda:1
+device: cuda:0
 client_optimizer: sgd
 dataset: cifar10
 dataset_path: ../data
 frequency_save: 0
-batch_size: 1024
+batch_size: 2048
 lr: 0.1
 lr_scheduler: CosineAnnealingLR
 model: resnet18
