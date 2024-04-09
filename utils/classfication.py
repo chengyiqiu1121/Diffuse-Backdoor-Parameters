@@ -1,11 +1,10 @@
 import torch
-from models.resnet import ResNet18
 from torchvision import datasets
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch import nn
 from tqdm import tqdm
-
+from torch.optim.lr_scheduler import MultiStepLR
 
 def fix_partial_model(train_list, net):
     print(train_list)
@@ -76,17 +75,23 @@ def test(net, criterion, testloader, device):
         return 100. * correct / total
 
 
-def train(net, criterion, optimizer, trainloader, testloader, epoch, device, train_layer=['all']):
+def train(net, criterion, optimizer, trainloader, testloader, epoch, device, train_layer=None):
+    if train_layer is None:
+        train_layer = 'all'
     best_acc = 0
     parameter_data = []
     acc_list = []
-    if train_layer == ['all']:
+    if train_layer == 'all':
         for i in tqdm(range(epoch), desc=f'training: {train_layer}'):
             train_one_epoch(net, criterion, optimizer, trainloader, i, device)
             current_acc = test(net, criterion, testloader, device)
             acc_list.append(current_acc)
             best_acc = max(current_acc, best_acc)
-        torch.save(net.state_dict(), '../tmp/whole_model.pth')
+        res_dict = {
+            'acc_list': acc_list,
+            'state_dict': net.state_dict(),
+        }
+        torch.save(res_dict, '../tmp/whole_model_resnet18_cifar10.pth')
     else:
         fix_partial_model(train_layer, net)
         for i in tqdm(range(epoch)):
@@ -100,11 +105,16 @@ def train(net, criterion, optimizer, trainloader, testloader, epoch, device, tra
             'acc_list': acc_list,
             'pdata': pdata_dic2tensor(parameter_data),
         }
-        torch.save(res_dict, '../tmp/pdata.pth')
+        torch.save(res_dict, '../tmp/pdata_resnet18_cifar10.pth')
     return best_acc
 
 
 if __name__ == '__main__':
+    import sys
+
+    sys.path.append('..')
+    from models.resnet import ResNet18
+
     net = ResNet18(num_classes=10)
     train_data = datasets.CIFAR10(
         root='../data/cifar10',
@@ -118,15 +128,17 @@ if __name__ == '__main__':
         download=True,
         transform=transforms.ToTensor()
     )
-    batch = 2048
-    train_loader = DataLoader(train_data, batch, shuffle=True)
-    test_loader = DataLoader(test_data, batch, shuffle=False)
+    batch = 512
+    num_workers = 4
+    train_loader = DataLoader(train_data, batch, shuffle=True, num_workers=num_workers)
+    test_loader = DataLoader(test_data, batch, shuffle=False, num_workers=num_workers)
     device = 'cuda:1'
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=1e-3)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.1, weight_decay=5e-4, momentum=0.9)
+    lr_schedule = MultiStepLR(milestones=[30, 60, 90, 100], gamma=0.2, optimizer=optimizer)
     net = net.to(device)
     train_layer = ['linear.weight', 'linear.bias']
-    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=10, trainloader=train_loader, device=device,
+    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
           testloader=test_loader)
-    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=10, trainloader=train_loader, device=device,
+    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=200, trainloader=train_loader, device=device,
           testloader=test_loader, train_layer=train_layer)
