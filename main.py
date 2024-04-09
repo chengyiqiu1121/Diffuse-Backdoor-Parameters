@@ -2,7 +2,7 @@ import hydra
 from omegaconf import DictConfig
 from pytorch_lightning import Trainer
 
-from tools.ae_ddpm import AE_DDPM
+from utils.ae_ddpm import AE_DDPM
 
 @hydra.main(version_base=None, config_path='configs', config_name='base')
 def train_pdiff(config: DictConfig):
