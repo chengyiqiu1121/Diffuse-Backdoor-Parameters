@@ -112,6 +112,9 @@ def train(net, criterion, optimizer, trainloader, testloader, epoch, device, tra
     return best_acc
 
 
+
+
+
 if __name__ == '__main__':
     import sys
 
