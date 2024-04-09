@@ -35,6 +35,7 @@ loss_type: mse
 
 train:
   split_epoch: 30000
+  max_epoch: 60000
 #   split_epoch: 0
   optimizer:
     _target_: torch.optim.AdamW

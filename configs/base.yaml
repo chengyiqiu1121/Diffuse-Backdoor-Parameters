@@ -1,6 +1,6 @@
 defaults:
-  - task: cifar100
-  - system: autoencoder
+  - task: cifar10
+  - system: ae_ddpm
   - _self_
 
 device:
