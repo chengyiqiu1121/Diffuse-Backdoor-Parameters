@@ -3,12 +3,12 @@ pin_memory: True
 non_blocking: True
 prefetch: False
 amp: False
-device: cuda:0
+device: cuda:1
 client_optimizer: sgd
 dataset: cifar10
 dataset_path: ../data
 frequency_save: 0
-batch_size: 128
+batch_size: 1024
 lr: 0.1
 lr_scheduler: CosineAnnealingLR
 model: resnet18
