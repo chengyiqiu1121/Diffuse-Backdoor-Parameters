@@ -25,11 +25,14 @@ def state_part(train_list, net):
 def pdata_dic2tensor(pdata):
     res = []
     for i in pdata:
-        w = i['linear.weight'].reshape(-1)
-        b = i['linear.bias']
-        wb = torch.cat([w, b], dim=0)
-        res.append(wb)
-    return torch.stack(res)
+        # w = i['linear.weight'].reshape(-1)
+        # b = i['linear.bias']
+        # wb = torch.cat([w, b], dim=0)
+        # res.append(wb)]
+        for k, v in i.items():
+            res.append(v.reshape(-1))
+    res = torch.cat(res, dim=0)
+    return res
 
 
 def train_one_epoch(net, criterion, optimizer, trainloader, current_epoch, device, lr_schedule):
@@ -112,9 +115,6 @@ def train(net, criterion, optimizer, trainloader, testloader, epoch, device, tra
     return best_acc
 
 
-
-
-
 if __name__ == '__main__':
     import sys
 
@@ -134,7 +134,7 @@ if __name__ == '__main__':
         download=True,
         transform=transforms.ToTensor()
     )
-    batch = 2048
+    batch = 512
     num_workers = 8
     train_loader = DataLoader(train_data, batch, shuffle=True, num_workers=num_workers)
     test_loader = DataLoader(test_data, batch, shuffle=False, num_workers=num_workers)
@@ -142,9 +142,10 @@ if __name__ == '__main__':
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.1, weight_decay=5e-4, momentum=0.9)
     net = net.to(device)
-    train_layer = ['layer4.1.bn2.bias', 'layer4.1.bn2.weight', 'linear.weight', 'linear.bias']
-    # lr_schedule = MultiStepLR(milestones=[30, 60, 90, 100], gamma=0.2, optimizer=optimizer)
-    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=200, trainloader=train_loader, device=device,
-          testloader=test_loader, lr_schedule=None)
+    train_layer = ['layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn2.bias', 'layer4.1.bn2.weight',
+                   'linear.weight', 'linear.bias']
+    lr_schedule = MultiStepLR(milestones=[30, 60, 90, 100], gamma=0.2, optimizer=optimizer)
+    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
+          testloader=test_loader, lr_schedule=lr_schedule)
     train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=200, trainloader=train_loader, device=device,
           testloader=test_loader, train_layer=train_layer, lr_schedule=None)

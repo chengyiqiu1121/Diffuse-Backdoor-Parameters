@@ -28,7 +28,7 @@ epoch: 100
 save_num_model: 200
 #train_layer: ['layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn2.bias', 'layer4.1.bn2.weight']
 #train_layer: ['linear.weight', 'linear.bias']
-train_layer: ['layer4.1.bn2.bias', 'layer4.1.bn2.weight', 'linear.weight', 'linear.bias']
+train_layer: ['layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn2.bias', 'layer4.1.bn2.weight', 'linear.weight', 'linear.bias']
 
 # parameter data root
 param:
