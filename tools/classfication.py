@@ -31,7 +31,6 @@ def pdata_dic2tensor(pdata):
         # res.append(wb)]
         for k, v in i.items():
             res.append(v.reshape(-1))
-    res = torch.cat(res, dim=0)
     return res
 
 
@@ -106,10 +105,17 @@ def train(net, criterion, optimizer, trainloader, testloader, epoch, device, tra
             acc_list.append(current_acc)
             best_acc = max(current_acc, best_acc)
             parameter_data.append(state_part(train_layer, net))
+        t1 = pdata_dic2tensor(parameter_data)
+        res_pdata = []
+        index = 0
+        for i in range(int(len(t1) / len(train_layer))):
+            res_pdata.append(torch.cat(t1[index: (index + len(train_layer))], dim=0))
+            index = index + len(train_layer) - 1
+        res_pdata = torch.stack(res_pdata)
         res_dict = {
             'best_acc': best_acc,
             'acc_list': acc_list,
-            'pdata': pdata_dic2tensor(parameter_data),
+            'pdata': res_pdata,
         }
         torch.save(res_dict, '../tmp/pdata_resnet18_cifar10.pth')
     return best_acc
@@ -144,8 +150,8 @@ if __name__ == '__main__':
     net = net.to(device)
     train_layer = ['layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn2.bias', 'layer4.1.bn2.weight',
                    'linear.weight', 'linear.bias']
-    lr_schedule = MultiStepLR(milestones=[30, 60, 90, 100], gamma=0.2, optimizer=optimizer)
-    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
+    lr_schedule = MultiStepLR(milestones=[30, 60, 90, 120, 150], gamma=0.2, optimizer=optimizer)
+    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=150, trainloader=train_loader, device=device,
           testloader=test_loader, lr_schedule=lr_schedule)
     train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=200, trainloader=train_loader, device=device,
           testloader=test_loader, train_layer=train_layer, lr_schedule=None)
