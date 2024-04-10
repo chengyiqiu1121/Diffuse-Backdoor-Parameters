@@ -134,8 +134,8 @@ if __name__ == '__main__':
         download=True,
         transform=transforms.ToTensor()
     )
-    batch = 64
-    num_workers = 4
+    batch = 2048
+    num_workers = 8
     train_loader = DataLoader(train_data, batch, shuffle=True, num_workers=num_workers)
     test_loader = DataLoader(test_data, batch, shuffle=False, num_workers=num_workers)
     device = 'cuda:0'
