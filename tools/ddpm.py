@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import torch.nn as nn
 
-from utils.base import BaseSystem
+from tools.base import BaseSystem
 from core.utils.ddpm import *
 from core.utils.utils import *
 from core.module.prelayer.latent_transformer import Param2Latent

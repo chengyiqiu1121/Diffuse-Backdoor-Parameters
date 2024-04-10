@@ -29,7 +29,6 @@ class AE_DDPM(DDPM):
         self.model = self.model.model.to(config.device.cuda)
         self.train_layer = config.task.train_layer
 
-
     def ae_forward(self, batch, **kwargs):
         output = self.ae_model(batch)
         loss = self.loss_func(batch, output, **kwargs)
@@ -119,11 +118,11 @@ class AE_DDPM(DDPM):
             checkpoint = {
                 'ae_model': self.ae_model.state_dict(),
                 'ae_class': self.ae_model.__class__.__name__,
-                'model': self.model.model.state_dict(),
-                'model_class': self.model.model.__class__.__name__,
+                'model': self.model.state_dict(),
+                'model_class': self.model.__class__.__name__,
             }
             torch.save(checkpoint,
-                       f'/home/chengyiqiu/code/diffusion/Neural-Network-Diffusion/outputs/ae_ddpm_cifar10/ae_ddpm{self.current_epoch}.pth')
+                       f'/home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm{self.current_epoch}.pth')
             return dict
 
     def configure_optimizers(self, **kwargs):
@@ -137,7 +136,3 @@ class AE_DDPM(DDPM):
             self.lr_scheduler = hydra.utils.instantiate(self.train_cfg.lr_scheduler)
 
         return self.ddpm_optimizer, self.ae_optimizer
-
-
-
-
