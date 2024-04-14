@@ -43,16 +43,15 @@ print(f'ae param shape: {ae_params.shape}')
 # ----------------prepare resnet -----------------
 from models.resnet import ResNet18
 
-res_path = '../tmp/whole_model_resnet18_cifar10.pth'
+res_path = '/home/chengyiqiu/code/backdoors/stable_backdoor_purification/record_cifar10/badnet/pratio_0.1-target_0-archi_resnet18-dataset_cifar10-sratio_0.02-initlr_0.1/attack_result.pt'
 t = torch.load(res_path)
 # resnet.load_state_dict(torch.load(res_path)['model'])
-state_dict = torch.load(res_path)['state_dict']
+state_dict = torch.load(res_path)['model']
 # train_layer = ['layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn2.bias', 'layer4.1.bn2.weight']
 train_layer = ['linear.weight', 'linear.bias']
 transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize((0.5070751592371323, 0.48654887331495095, 0.4409178433670343),
-                         (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)),
+    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 ])
 test_dataset = datasets.CIFAR10(
     root='/home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/data/cifar10', train=True, download=True,

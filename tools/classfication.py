@@ -121,7 +121,7 @@ def train(net, criterion, optimizer, trainloader, testloader, epoch, device, tra
             'acc_list': acc_list,
             'pdata': res_pdata,
         }
-        torch.save(res_dict, f'../tmp/tmp{time.time().__str__()}')
+        torch.save(res_dict, f'../tmp/tmp{time.time().__str__()}.pth')
     return best_acc
 
 
@@ -156,21 +156,21 @@ if __name__ == '__main__':
     loss_fn = nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.SGD(net.parameters(), lr=0.1, weight_decay=5e-4, momentum=0.9)
     net = net.to(device)
-    train_layer_1 = ['layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn2.bias', 'layer4.1.bn2.weight',
+    train_layer_1 = ['layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn2.weight', 'layer4.1.bn2.bias',
                    'linear.weight', 'linear.bias']
-    train_layer_2 = ['layer4.1.bn2.bias', 'layer4.1.bn2.weight', 'linear.weight', 'linear.bias']
+    train_layer_2 = ['layer4.1.bn2.weight', 'layer4.1.bn2.bias', 'linear.weight', 'linear.bias']
     train_layer_3 = ['linear.weight', 'linear.bias']
     lr_schedule = MultiStepLR(milestones=[30, 60, 90, 100], gamma=0.2, optimizer=optimizer)
     train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
           testloader=test_loader, lr_schedule=lr_schedule)
     send2bot('train whole model done', 'train whole')
-    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
+    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=50, trainloader=train_loader, device=device,
           testloader=test_loader, train_layer=train_layer_1)
     send2bot(msg='done', title='train_layer_1')
-    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
+    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=50, trainloader=train_loader, device=device,
           testloader=test_loader, train_layer=train_layer_2)
     send2bot(msg='done', title='train_layer_2')
-    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
+    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=50, trainloader=train_loader, device=device,
           testloader=test_loader, train_layer=train_layer_3)
     send2bot(msg='done', title='train_layer_3')
 
