@@ -18,7 +18,6 @@ def reload_pdata(config: DictConfig):
 
 def cat_pdata():
     folder_path = '../tmp/'
-    # 使用glob模块查找所有匹配'tmp*.pth'的文件
     files = glob.glob(f'{folder_path}/tmp*')
     pdata_list = []
     # 打印找到的文件列表

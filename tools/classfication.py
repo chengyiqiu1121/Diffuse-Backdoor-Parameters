@@ -149,8 +149,8 @@ if __name__ == '__main__':
         download=True,
         transform=transform
     )
-    batch = 64
-    num_workers = 2
+    batch = 128
+    num_workers = 8
     train_loader = DataLoader(train_data, batch, shuffle=True, num_workers=num_workers)
     test_loader = DataLoader(test_data, batch, shuffle=False, num_workers=num_workers)
     device = 'cuda:0'
