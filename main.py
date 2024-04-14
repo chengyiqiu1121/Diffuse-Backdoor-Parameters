@@ -2,7 +2,7 @@ import hydra
 import torch
 from omegaconf import DictConfig
 from pytorch_lightning import Trainer
-
+from tools.tg_bot import send2bot
 from tools.ae_ddpm import AE_DDPM
 
 
@@ -17,4 +17,9 @@ def train_pdiff(config: DictConfig):
 
 
 if __name__ == '__main__':
-    train_pdiff()
+    try:
+        train_pdiff()
+        send2bot('done', 'train p-diffusion')
+    except Exception as e:
+        send2bot(msg=str(e), title='error occur')
+

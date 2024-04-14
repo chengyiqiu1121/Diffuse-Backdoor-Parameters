@@ -113,7 +113,7 @@ hydra:
     - hydra.mode=RUN
     task: []
   job:
-    name: ae_ddpm
+    name: reload_pdata
     chdir: null
     override_dirname: ''
     id: ???
@@ -129,7 +129,7 @@ hydra:
   runtime:
     version: 1.3.2
     version_base: '1.3'
-    cwd: /home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/utils
+    cwd: /home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/tools
     config_sources:
     - path: hydra.conf
       schema: pkg
@@ -140,7 +140,7 @@ hydra:
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/utils/outputs/cifar10
+    output_dir: /home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/tools/outputs/cifar10
     choices:
       system: ae_ddpm
       task: cifar10

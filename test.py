@@ -1,14 +1,30 @@
 import torch
+from torchvision.transforms import transforms
+
+from tools.classfication import test
+import torchvision.datasets
+from torchvision.transforms.transforms import ToTensor
+from torch.utils.data.dataloader import DataLoader
+from models.resnet import ResNet18
 import torch.nn.functional as F
 
-# 假设我们有一个batch_size为2的数据
-# predictions是模型的预测输出，形状为[batch_size, num_classes]
-predictions = torch.tensor([[0.1, 0.9, 0.0], [0.8, 0.2, 0.0]])
-
-# targets是真实类别索引，形状为[batch_size]
-targets = torch.tensor([1, 0])
-
-# 计算交叉熵损失
-loss = F.cross_entropy(predictions, targets)
-
-print(loss)
+if __name__ == '__main__':
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    ])
+    test_data = torchvision.datasets.CIFAR10(
+        root='data/cifar10', train=False, download=False, transform=transform
+    )
+    test_loader = DataLoader(dataset=test_data, batch_size=2048, shuffle=True, num_workers=8)
+    net = ResNet18(num_classes=10)
+    net = net.to('cuda:0')
+    res = test(net=net, criterion=F.cross_entropy, testloader=test_loader, device='cuda:0')
+    print(res)
+    resnet = ResNet18(num_classes=10)
+    ld = torch.load('tmp/whole_model_resnet18_cifar10.pth')
+    resnet.load_state_dict(ld['state_dict'])
+    resnet.to('cuda:0')
+    net = resnet
+    res = test(net=net, criterion=F.cross_entropy, testloader=test_loader, device='cuda:0')
+    print(res)

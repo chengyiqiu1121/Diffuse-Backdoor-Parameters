@@ -34,7 +34,7 @@ system:
   name: ae_ddpm_cifar100
   ae_model:
     _target_: core.module.modules.encoder.medium
-    in_dim: 5130
+    in_dim: 7178
     input_noise_factor: 0.001
     latent_noise_factor: 0.5
   model:
@@ -97,7 +97,7 @@ system:
         version: .
 device:
   cuda_visible_devices: 0,1
-  id: 1
+  id: 0
   cuda: cuda:${device.id}
 load_system_checkpoint: null
 mode: train

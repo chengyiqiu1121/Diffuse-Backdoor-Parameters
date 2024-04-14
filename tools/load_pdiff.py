@@ -20,7 +20,7 @@ def partial_reverse_tomodel(flattened, model, train_layer):
             layer_idx += pa_length
     return model
 
-ae_ddpm_path = '/home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm59999.pth'
+ae_ddpm_path = '../outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm59999.pth'
 ld = torch.load(ae_ddpm_path)
 ae_model = medium(
     in_dim=5130,
@@ -33,7 +33,7 @@ ae_cnn = AE_CNN_bottleneck(
 )
 ae_model.load_state_dict(ld['ae_model'])
 ae_cnn.load_state_dict(ld['model'])
-noice = torch.randn(200, 4, 8)
+noice = torch.randn(300, 4, 8)
 time = (torch.rand(noice.shape[0]) * 1000).type(torch.int64).to(noice.device)
 latent = ae_cnn(noice, time, cond=None)
 ae_params = ae_model.decode(latent)
@@ -43,12 +43,10 @@ print(f'ae param shape: {ae_params.shape}')
 # ----------------prepare resnet -----------------
 from models.resnet import ResNet18
 
-# resnet = ResNet18()
-# res_path = '/home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/record_cifar10/badnet/pratio_0.1-target_0-archi_resnet18-dataset_cifar10-sratio_0.02-initlr_0.1/attack_result.pt'
-res_path = '/home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/param_data/cifar10/data.pt'
+res_path = '../tmp/whole_model_resnet18_cifar10.pth'
 t = torch.load(res_path)
 # resnet.load_state_dict(torch.load(res_path)['model'])
-resnet = torch.load(res_path)['model']
+state_dict = torch.load(res_path)['state_dict']
 # train_layer = ['layer4.1.bn1.weight', 'layer4.1.bn1.bias', 'layer4.1.bn2.bias', 'layer4.1.bn2.weight']
 train_layer = ['linear.weight', 'linear.bias']
 transform = transforms.Compose([
@@ -57,11 +55,13 @@ transform = transforms.Compose([
                          (0.2673342858792401, 0.2564384629170883, 0.27615047132568404)),
 ])
 test_dataset = datasets.CIFAR10(
-    root='/home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/data/cifar10', train=False, download=True,
+    root='/home/chengyiqiu/code/diffusion/Diffuse-Backdoor-Parameters/data/cifar10', train=True, download=True,
     transform=transform,
 )
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=8)
 device = 'cuda:0'
+resnet = ResNet18()
+resnet.load_state_dict(state_dict)
 resnet = resnet.to(device)
 
 # -------------- do eval --------------------
@@ -85,15 +85,14 @@ for i, param in enumerate(tqdm(ae_params)):
     output_list = []
 
     with torch.no_grad():
-        for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            target = target.to(torch.int64)
-            test_loss += F.cross_entropy(output, target, size_average=False).item()  # sum up batch loss
-            total += data.shape[0]
-            pred = torch.max(output, 1)[1]
-            output_list += pred.cpu().numpy().tolist()
-            correct += pred.eq(target.view_as(pred)).sum().item()
+        for inputs, targets in test_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            loss = F.cross_entropy(outputs, targets)
+            test_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
 
     test_loss /= total
     acc = 100. * correct / total
@@ -127,3 +126,5 @@ print(f"Average accuracy: {average:.2f}")
 print(f"Max accuracy: {max_value:.2f}")
 print(f"Min accuracy: {min_value:.2f}")
 print(f"Median accuracy: {median:.2f}")
+import tools.tg_bot as bot
+bot.send2bot('done', 'test pdiff')
