@@ -19,7 +19,7 @@ def train_pdiff(config: DictConfig):
 if __name__ == '__main__':
     try:
         train_pdiff()
-        send2bot('done', 'train p-diffusion')
+        send2bot('done', 'train p diffusion')
     except Exception as e:
         send2bot(msg=str(e), title='error occur')
 

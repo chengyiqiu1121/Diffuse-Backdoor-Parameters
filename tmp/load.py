@@ -1,6 +1,7 @@
 import glob
 
 import torch
+from models.resnet import ResNet18
 
 folder_path = './'
 

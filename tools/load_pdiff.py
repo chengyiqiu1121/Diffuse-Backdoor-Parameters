@@ -42,8 +42,7 @@ del ae_model, ae_cnn
 print(f'ae param shape: {ae_params.shape}')
 # ----------------prepare resnet -----------------
 from models.resnet import ResNet18
-
-res_path = '/home/chengyiqiu/code/backdoors/stable_backdoor_purification/record_cifar10/badnet/pratio_0.1-target_0-archi_resnet18-dataset_cifar10-sratio_0.02-initlr_0.1/attack_result.pt'
+res_path = '/home/chengyiqiu/code/backdoor/stable_backdoor_purification/record_cifar10/badnet/pratio_0.1-target_0-archi_resnet18-dataset_cifar10-sratio_0.02-initlr_0.1/attack_result.pt'
 t = torch.load(res_path)
 # resnet.load_state_dict(torch.load(res_path)['model'])
 state_dict = torch.load(res_path)['model']

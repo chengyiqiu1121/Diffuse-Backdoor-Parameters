@@ -19,4 +19,4 @@ def send2bot(msg, title):
 
 
 if __name__ == "__main__":
-    send2bot('done', 'train pdiff')
+    send2bot('done', 'test')
