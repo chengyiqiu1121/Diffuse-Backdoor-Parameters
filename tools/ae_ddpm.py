@@ -110,9 +110,9 @@ class AE_DDPM(DDPM):
                 'model': self.model.state_dict(),
                 'model_class': self.model.__class__.__name__,
             }
-            os.makedirs(name='../outputs/cifar10/ae_ddpm_cifar10_pth', exist_ok=True)
+            os.makedirs(name='./outputs/cifar10/ae_ddpm_cifar10_pth', exist_ok=True)
             torch.save(checkpoint,
-                       f'../outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm{self.current_epoch}.pth')
+                       f'./outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm{self.current_epoch}.pth')
         else:
             dict = super(AE_DDPM, self).validation_step(batch, batch_idx, **kwargs)
             self.log('ae_acc', 94.3)
@@ -123,9 +123,9 @@ class AE_DDPM(DDPM):
                 'model': self.model.state_dict(),
                 'model_class': self.model.__class__.__name__,
             }
-            os.makedirs(name='../outputs/cifar10/ae_ddpm_cifar10_pth', exist_ok=True)
+            os.makedirs(name='./outputs/cifar10/ae_ddpm_cifar10_pth', exist_ok=True)
             torch.save(checkpoint,
-                       f'../outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm{self.current_epoch}.pth')
+                       f'./outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm{self.current_epoch}.pth')
             return dict
 
     def configure_optimizers(self, **kwargs):

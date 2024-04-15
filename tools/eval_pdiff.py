@@ -35,7 +35,7 @@ ae_cnn = AE_CNN_bottleneck(
 )
 ae_model.load_state_dict(ld['ae_model'])
 ae_cnn.load_state_dict(ld['model'])
-noice = torch.randn(300, 4, 8)
+noice = torch.randn(250, 4, 8)
 time = (torch.rand(noice.shape[0]) * 1000).type(torch.int64).to(noice.device)
 latent = ae_cnn(noice, time, cond=None)
 ae_params = ae_model.decode(latent)
