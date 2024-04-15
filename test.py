@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from torchvision.transforms import transforms
 
@@ -28,3 +30,5 @@ if __name__ == '__main__':
     net = resnet
     res = test(net=net, criterion=F.cross_entropy, testloader=test_loader, device='cuda:0')
     print(res)
+
+
