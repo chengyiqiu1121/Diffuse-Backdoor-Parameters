@@ -2,6 +2,8 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import transforms
+import sys
+sys.path.append('..')
 from core.module.modules.encoder import medium
 from core.module.modules.unet import AE_CNN_bottleneck
 import torch.nn.functional as F
@@ -22,7 +24,7 @@ def partial_reverse_tomodel(flattened, model, train_layer):
     return model
 
 
-ae_ddpm_path = '../outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm59999.pth'
+ae_ddpm_path = '../outputs/cifar10/ae_ddpm_cifar10_pth/ae_ddpm32999.pth'
 ld = torch.load(ae_ddpm_path)
 ae_model = medium(
     in_dim=5130,
@@ -35,7 +37,7 @@ ae_cnn = AE_CNN_bottleneck(
 )
 ae_model.load_state_dict(ld['ae_model'])
 ae_cnn.load_state_dict(ld['model'])
-noice = torch.randn(250, 4, 8)
+noice = torch.randn(200, 4, 8)
 time = (torch.rand(noice.shape[0]) * 1000).type(torch.int64).to(noice.device)
 latent = ae_cnn(noice, time, cond=None)
 ae_params = ae_model.decode(latent)

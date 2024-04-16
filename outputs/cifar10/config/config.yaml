@@ -71,8 +71,8 @@ system:
       check_val_every_n_epoch: null
       val_check_interval: 3000
       log_every_n_steps: 10
-      limit_val_batches: 1
-      limit_test_batches: 1
+      limit_val_batches: 4
+      limit_test_batches: 4
       devices:
       - ${device.id}
       enable_model_summary: false

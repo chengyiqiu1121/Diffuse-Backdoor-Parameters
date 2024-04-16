@@ -23,9 +23,10 @@ def cat_pdata():
     pdata_list = []
     for file in files:
         t = torch.load(file)
+        # if t['pdata'].shape[0] == 20:
         pdata_list.append(t['pdata'])
-    res = torch.stack(pdata_list)
-    res = res.view((res.shape[0] * res.shape[1], -1))
+    res = torch.cat(pdata_list, dim=0)
+    # res = res.view((res.shape[0] * res.shape[1], -1))
     torch.save(res, 'pdata.pth')
 
 

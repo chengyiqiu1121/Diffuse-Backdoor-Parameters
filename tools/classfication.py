@@ -9,8 +9,11 @@ from torch.utils.data import DataLoader
 from torch import nn
 from tqdm import tqdm
 from torch.optim.lr_scheduler import MultiStepLR
-# from tools.tg_bot import send2bot
-from tg_bot import send2bot
+import sys
+
+sys.path.append('../')
+from tools.tg_bot import send2bot
+# from tg_bot import send2bot
 import torch.nn.init as init
 
 collect_layer = ['linear.weight', 'linear.bias']
@@ -203,14 +206,15 @@ def train_for_pdata(net, criterion, optimizer, trainloader, testloader, device, 
             rand_init_layer(net, init_layer)
             init_acc = test(net, criterion, testloader, device)
             logger.debug(f'after random init acc: {init_acc: .2f}')
-            for i in range(10):
+            for i in range(100):
                 train_one_epoch(net, criterion, optimizer, trainloader, i, device)
                 current_acc = test(net, criterion, testloader, device)
                 logger.debug(f'epoch{i}: retrain acc {current_acc: .2f}')
                 best_acc = max(best_acc, current_acc)
                 n += 1
-                if current_acc > 88:
+                if current_acc > 82:
                     break
+            n = min(10, n)
             mode = 0
 
 
@@ -231,12 +235,18 @@ if __name__ == '__main__':
     batch_list = [32, 64, 128, 256, 512, 1024]
 
     lr_schedule = MultiStepLR(milestones=[30, 60, 90, 100], gamma=0.2, optimizer=optimizer)
-    train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
-          testloader=test_loader, lr_schedule=lr_schedule)
-    send2bot('train whole model done', 'train whole')
-    init_layer = ['conv1.weight', 'bn1.weight', 'bn1.bias']
+    # train(net=net, criterion=loss_fn, optimizer=optimizer, epoch=100, trainloader=train_loader, device=device,
+    #       testloader=test_loader, lr_schedule=lr_schedule)
+    # send2bot('train whole model done', 'train whole')
+    init_layer = ['conv1.weight',
+                  'layer1.0.conv1.weight', 'layer1.0.conv2.weight', 'layer1.1.conv1.weight', 'layer1.1.conv2.weight',
+                  'layer4.0.conv2.weight', 'layer4.1.conv1.weight', 'layer4.1.conv2.weight',
+                  'linear.weight', 'linear.bias'
+                  ]
     # update optimizer, set lr=1e-4 to fine-tune
-    optimizer = torch.optim.SGD(net.parameters(), lr=1e-4)
+    net.load_state_dict(torch.load('../tmp/whole_model_resnet18_cifar10.pth')['state_dict'])
+    net = net.to('cuda:0')
+    optimizer = torch.optim.SGD(net.parameters(), lr=1e-2)
     train_for_pdata(net=net, criterion=loss_fn, optimizer=optimizer, trainloader=train_loader, testloader=test_loader,
-                    device=device, init_layer=init_layer, mode=0)
+                    device=device, init_layer=init_layer, mode=1)
     send2bot('train pdata done', 'train pdata')
