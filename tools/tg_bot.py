@@ -1,3 +1,5 @@
+import argparse
+
 from telegram_logging import TelegramHandler, TelegramFormatter
 import sys
 import sys
@@ -19,4 +21,9 @@ def send2bot(msg, title):
 
 
 if __name__ == "__main__":
-    send2bot('done', 'test')
+    parser = argparse.ArgumentParser('')
+    parser.add_argument('--msg', type=str, default='msg')
+    parser.add_argument('--title', type=str, default='title')
+    args = parser.parse_args()
+    send2bot(msg=args.msg, title=args.title)
+    print()

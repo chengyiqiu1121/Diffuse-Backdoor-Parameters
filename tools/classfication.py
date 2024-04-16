@@ -240,13 +240,13 @@ if __name__ == '__main__':
     # send2bot('train whole model done', 'train whole')
     init_layer = ['conv1.weight',
                   'layer1.0.conv1.weight', 'layer1.0.conv2.weight', 'layer1.1.conv1.weight', 'layer1.1.conv2.weight',
-                  'layer4.0.conv2.weight', 'layer4.1.conv1.weight', 'layer4.1.conv2.weight',
+                  'layer4.0.conv2.weight', 'layer4.0.conv1.weight', 'layer4.1.conv1.weight', 'layer4.1.conv2.weight',
                   'linear.weight', 'linear.bias'
                   ]
     # update optimizer, set lr=1e-4 to fine-tune
     net.load_state_dict(torch.load('../tmp/whole_model_resnet18_cifar10.pth')['state_dict'])
     net = net.to('cuda:0')
-    optimizer = torch.optim.SGD(net.parameters(), lr=1e-2)
+    optimizer = torch.optim.SGD(net.parameters(), lr=5e-3)
     train_for_pdata(net=net, criterion=loss_fn, optimizer=optimizer, trainloader=train_loader, testloader=test_loader,
                     device=device, init_layer=init_layer, mode=1)
     send2bot('train pdata done', 'train pdata')
